@@ -8,19 +8,14 @@ from testcontainers.localstack import LocalStackContainer
 
 from functions import download_file, send_notification
 
-AWS_ACCESS_KEY_ID = "jon"
-AWS_SECRET_ACCESS_KEY = "doe"
-
-
+@mock.patch.dict(os.environ, {"AWS_ACCESS_KEY_ID": "jon","AWS_SECRET_ACCESS_KEY":"doe"})
 class TestProcess(unittest.TestCase):
 
     def test_should_download_s3_file_locally_given_valid_path(self):
 
         # 1. Preparamos el ambiente de prueba
         # inicializamos el testcontainer con la imagen de LocalStack
-        with LocalStackContainer(
-            image="localstack/localstack:3.2.0",
-        ).with_env(
+        with LocalStackContainer(image="localstack/localstack:3.2.0").with_env(
             "SKIP_SSL_CERT_DOWNLOAD", 1
         ).with_env("DISABLE_EVENTS", 1) as localstack:
 
@@ -33,11 +28,7 @@ class TestProcess(unittest.TestCase):
                 bucket_name = "logs-test-bucket"
 
                 # creamos un cliente de boto3 para poder interactuar con nuestro AWS de LocalStack
-                s3_client = boto3.client(
-                    "s3",
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                )
+                s3_client = boto3.client("s3")
 
                 s3_client.create_bucket(Bucket=bucket_name)
 
@@ -82,11 +73,7 @@ class TestProcess(unittest.TestCase):
                 queue_name = "logs-test-queue"
 
                 # creamos un cliente de boto3 para poder interactuar con nuestro AWS de LocalStack
-                sqs_client = boto3.client(
-                    "sqs",
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                )
+                sqs_client = boto3.client("sqs")
 
                 sqs_client.create_queue(QueueName=queue_name)
                 queue_url = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
@@ -138,3 +125,4 @@ class TestProcess(unittest.TestCase):
                 self.assertTrue(len(response["Messages"]) == 3)
 
                 # TODO: Comparar el contenido de los mensajes recibidos con el esperado
+
