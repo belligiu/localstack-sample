@@ -44,6 +44,7 @@ def transform(file_name: str, local_path: str):
     with open(local_path, "w") as f:
         writer = csv.writer(f)
         writer.writerows(output)
+    logging.info("Finished transforming logs data.")
     return logs_to_notify
 
 

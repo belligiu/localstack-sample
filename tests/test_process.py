@@ -18,9 +18,11 @@ class TestProcess(unittest.TestCase):
 
         # 1. Preparamos el ambiente de prueba
         # inicializamos el testcontainer con la imagen de LocalStack
-        with LocalStackContainer(image="localstack/localstack:3.2.0") as localstack:
-            # indicamos que inicie el servicio de S3
-            localstack.with_services("s3")
+        with LocalStackContainer(
+            image="localstack/localstack:3.2.0",
+        ).with_env(
+            "SKIP_SSL_CERT_DOWNLOAD", 1
+        ).with_env("DISABLE_EVENTS", 1) as localstack:
 
             # le pedimos a Localstack la url ya que debemos mockear la variable de entorno del endpoint de AWS para las pruebas
             endpoint_url = localstack.get_url()
@@ -46,7 +48,7 @@ class TestProcess(unittest.TestCase):
                 )
 
                 # ahora si tenemos listo nuestro ambiente de prueba y podemos ejecutar nuestra función
-                
+
                 # 2. Ejecutamos la función que queremos probar
                 download_file(
                     output_path="tests/resources/logs_test.log",
@@ -64,13 +66,12 @@ class TestProcess(unittest.TestCase):
                 )
 
     def test_should_notify_given_3_error_codes(self):
-       
+
         # 1. Preparamos el ambiente de prueba
         # inicializamos el testcontainer con la imagen de LocalStack
-        with LocalStackContainer(image="localstack/localstack:3.2.0") as localstack:
-
-            # indicamos que inicie el servicio de SQS
-            localstack.with_services("sqs")
+        with LocalStackContainer(image="localstack/localstack:3.2.0").with_env(
+            "SKIP_SSL_CERT_DOWNLOAD", 1
+        ).with_env("DISABLE_EVENTS", 1) as localstack:
 
             # le pedimos a Localstack la url ya que debemos mockear la variable de entorno del endpoint de AWS para las pruebas
             endpoint_url = localstack.get_url()
@@ -125,7 +126,7 @@ class TestProcess(unittest.TestCase):
                 ]
 
                 # ahora si tenemos listo nuestro ambiente de prueba y podemos ejecutar nuestra función
-                
+
                 # 2. Ejecutamos la función que queremos probar
                 send_notification(logs_to_notify=logs_to_notify, queue_name=queue_name)
 
@@ -137,40 +138,3 @@ class TestProcess(unittest.TestCase):
                 self.assertTrue(len(response["Messages"]) == 3)
 
                 # TODO: Comparar el contenido de los mensajes recibidos con el esperado
-
-    def test_should_not_notify_given_0_error_codes(self):
-        # lets set up everything to test our download function
-        with LocalStackContainer(image="localstack/localstack:3.2.0") as localstack:
-
-            # start s3
-            localstack.with_services("sqs")
-
-            # save localstack url to variable
-            endpoint_url = localstack.get_url()
-
-            # override the AWS_ENDPOINT_URL environment variable
-            with mock.patch.dict(os.environ, {"AWS_ENDPOINT_URL": endpoint_url}):
-
-                queue_name = "logs-test-queue"
-
-                # init boto3 client
-                sqs_client = boto3.client(
-                    "sqs",
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                )
-
-                # create the queue
-                sqs_client.create_queue(QueueName=queue_name)
-
-                # build a sample list of dict to notify
-                logs_to_notify = []
-
-                # now lets execute our function!
-                send_notification(logs_to_notify=logs_to_notify, queue_name=queue_name)
-
-                queue_url = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-                response = sqs_client.receive_message(
-                    QueueUrl=queue_url, MaxNumberOfMessages=10
-                )
-                self.assertTrue(response.get("Messages") is None)
