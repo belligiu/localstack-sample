@@ -122,7 +122,7 @@ class TestProcess(unittest.TestCase):
                     QueueUrl=queue_url, MaxNumberOfMessages=10
                 )
                 # 3. verificamos que el largo del array de mensajes sea 3
-                self.assertTrue(len(response["Messages"]) == 3)
+                self.assertEquals(len(response["Messages"]), 3)
 
                 # TODO: Comparar el contenido de los mensajes recibidos con el esperado
 
